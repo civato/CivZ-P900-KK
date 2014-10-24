@@ -74,6 +74,12 @@ extern ssize_t hlpr_get_gpu_gov_table(char *buf);
 extern void hlpr_set_gpu_gov_table(int gpu_table[]);
 extern ssize_t hlpr_get_gpu_volt_table(char *buf);
 extern void hlpr_set_gpu_volt_table(int gpu_table[]);
+#ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
+static unsigned int hotplug_enabled_flag = 0;
+static unsigned int hotplug_plus_one_core_value = 5;
+static unsigned int hotplug_plus_two_core_value = 50;
+static unsigned int normalmin_freq_value = 250000;
+#endif
 
 #define lock_policy_rwsem(mode, cpu)					\
 static int lock_policy_rwsem_##mode					\
@@ -425,53 +431,184 @@ static ssize_t show_cpuinfo_cur_freq(struct cpufreq_policy *policy,
 
 extern void hlpr_set_min_max_G3D(unsigned int min, unsigned int max);
 
-static ssize_t show_scaling_min_freq_gpu(struct cpufreq_policy *policy,	char *buf)
+static ssize_t show_scaling_min_freq_gpu(struct cpufreq_policy *policy, char *buf)
 {
-	return sprintf(buf, "%u\n", gpu_min);
+ return sprintf(buf, "%u\n", gpu_min);
 }
 
 static ssize_t store_scaling_min_freq_gpu(struct cpufreq_policy *policy, const char *buf, size_t count)
 {
-	unsigned int ret = -EINVAL;
-	unsigned int value = 0;
+ unsigned int ret = -EINVAL;
+ unsigned int value = 0;
 
-	ret = sscanf(buf, "%u", &value);
-	if (ret != 1)
-		return -EINVAL;
-	
-	if (value < gpu_max)
-	{
-		gpu_min = value;
-		hlpr_set_min_max_G3D(gpu_min, gpu_max);
-	}
-	else
-		return -EINVAL;
-	return count;
+ ret = sscanf(buf, "%u", &value);
+ if (ret != 1)
+ return -EINVAL;
+
+ if (value < gpu_max)
+ {
+ gpu_min = value;
+ hlpr_set_min_max_G3D(gpu_min, gpu_max);
+ }
+ else
+ return -EINVAL;
+ return count;
 }
 
-static ssize_t show_scaling_max_freq_gpu(struct cpufreq_policy *policy,	char *buf)
+static ssize_t show_scaling_max_freq_gpu(struct cpufreq_policy *policy, char *buf)
 {
-	return sprintf(buf, "%u\n", gpu_max);
+ return sprintf(buf, "%u\n", gpu_max);
 }
 
 static ssize_t store_scaling_max_freq_gpu(struct cpufreq_policy *policy, const char *buf, size_t count)
 {
-	unsigned int ret = -EINVAL;
-	unsigned int value = 0;
+ unsigned int ret = -EINVAL;
+ unsigned int value = 0;
 
-	ret = sscanf(buf, "%u", &value);
-	if (ret != 1)
-		return -EINVAL;
+ ret = sscanf(buf, "%u", &value);
+ if (ret != 1)
+ return -EINVAL;
 
-	if (value > gpu_min)
-	{
-		gpu_max = value;
-		hlpr_set_min_max_G3D(gpu_min, gpu_max);
-	}
-	else
-		return -EINVAL;
-	return count;
+ if (value > gpu_min)
+ {
+ gpu_max = value;
+ hlpr_set_min_max_G3D(gpu_min, gpu_max);
+ }
+ else
+ return -EINVAL;
+ return count;
 }
+
+#ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
+/* hotplug sysfs interface */
+
+unsigned int get_hotplug_enabled(void)
+{
+	return hotplug_enabled_flag;
+}
+
+void set_hotplug_enabled(unsigned int state)
+{
+	if (state == 0 || state == 1)
+		hotplug_enabled_flag = state;
+}
+
+unsigned int get_hotplug_plus_one_core(void)
+{
+	return hotplug_plus_one_core_value;
+}
+
+unsigned int get_hotplug_plus_two_core(void)
+{
+	return hotplug_plus_two_core_value;
+}
+
+void set_min_gpu_freq(unsigned int freq)
+{
+	if (freq != gpu_min && freq >= 100 && freq <= 677)
+	{
+		gpu_min = freq;
+		hlpr_set_min_max_G3D(freq, gpu_max);
+	}
+}
+
+unsigned int get_normalmin_freq(void)
+{
+	return normalmin_freq_value;
+}
+
+static ssize_t show_hotplug_enable(struct cpufreq_policy *policy, char *buf)
+{
+ return sprintf(buf, "%u\n", hotplug_enabled_flag);
+}
+
+static ssize_t store_hotplug_enable(struct cpufreq_policy *policy, const char *buf, size_t count)
+{
+ unsigned int ret = -EINVAL;
+ unsigned int value = 0;
+
+ ret = sscanf(buf, "%u", &value);
+ if (ret != 1)
+ return -EINVAL;
+
+if (value == 0 || value == 1)
+	hotplug_enabled_flag = value;
+else
+	return
+		-EINVAL;
+		
+ return count;
+}
+
+static ssize_t show_hotplug_plus_one_core(struct cpufreq_policy *policy, char *buf)
+{
+ return sprintf(buf, "%u\n", hotplug_plus_one_core_value);
+}
+
+static ssize_t store_hotplug_plus_one_core(struct cpufreq_policy *policy, const char *buf, size_t count)
+{
+ unsigned int ret = -EINVAL;
+ unsigned int value = 0;
+
+ ret = sscanf(buf, "%u", &value);
+ if (ret != 1)
+ return -EINVAL;
+
+if (value >= 0 && value <= 101)
+	hotplug_plus_one_core_value = value;
+else
+	return
+		-EINVAL;
+		
+ return count;
+}
+
+static ssize_t show_hotplug_plus_two_core(struct cpufreq_policy *policy, char *buf)
+{
+ return sprintf(buf, "%u\n", hotplug_plus_two_core_value);
+}
+
+static ssize_t store_hotplug_plus_two_core(struct cpufreq_policy *policy, const char *buf, size_t count)
+{
+ unsigned int ret = -EINVAL;
+ unsigned int value = 0;
+
+ ret = sscanf(buf, "%u", &value);
+ if (ret != 1)
+ return -EINVAL;
+
+if (value >= 0 && value <= 101)
+	hotplug_plus_two_core_value = value;
+else
+	return
+		-EINVAL;
+		
+ return count;
+}
+
+static ssize_t show_normalmin_freq(struct cpufreq_policy *policy, char *buf)
+{
+ return sprintf(buf, "%u\n", normalmin_freq_value);
+}
+
+static ssize_t store_normalmin_freq(struct cpufreq_policy *policy, const char *buf, size_t count)
+{
+ unsigned int ret = -EINVAL;
+ unsigned int value = 0;
+
+ ret = sscanf(buf, "%u", &value);
+ if (ret != 1)
+ return -EINVAL;
+
+if (value >= 100000 && value <= 2100000)
+	normalmin_freq_value = value;
+else
+	return
+		-EINVAL;
+		
+ return count;
+}
+#endif
 
 /**
  * show_scaling_governor - show the current policy for the specified CPU
@@ -487,6 +624,7 @@ static ssize_t show_scaling_governor(struct cpufreq_policy *policy, char *buf)
 				policy->governor->name);
 	return -EINVAL;
 }
+
 
 /**
  * store_scaling_governor - store policy for the specified CPU
@@ -688,6 +826,12 @@ cpufreq_freq_attr_rw(scaling_max_freq_gpu);
 cpufreq_freq_attr_ro(scaling_cur_freq_gpu);
 cpufreq_freq_attr_rw(GPU_gov_table);
 cpufreq_freq_attr_rw(GPU_volt_table);
+#ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
+cpufreq_freq_attr_rw(hotplug_enable);
+cpufreq_freq_attr_rw(hotplug_plus_one_core);
+cpufreq_freq_attr_rw(hotplug_plus_two_core);
+cpufreq_freq_attr_rw(normalmin_freq);
+#endif
 
 static struct attribute *default_attrs[] = {
 	&cpuinfo_min_freq.attr,
@@ -699,6 +843,7 @@ static struct attribute *default_attrs[] = {
 	&related_cpus.attr,
 	&scaling_governor.attr,
 	&scaling_driver.attr,
+	&cpufreq_freq_attr_scaling_available_freqs.attr,
 	&scaling_available_governors.attr,
 	&scaling_setspeed.attr,
 	&UV_mV_table.attr,
@@ -708,6 +853,12 @@ static struct attribute *default_attrs[] = {
 	&scaling_cur_freq_gpu.attr,
 	&GPU_gov_table.attr,
 	&GPU_volt_table.attr,
+#ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
+	&hotplug_enable.attr,
+	&hotplug_plus_one_core.attr,
+	&hotplug_plus_two_core.attr,
+	&normalmin_freq.attr,
+#endif
 	NULL
 };
 
