@@ -3,7 +3,7 @@
 
 export ARCH=arm
 export CROSS_COMPILE=~/KERNEL/TOOLCHAINS/gcc-linaro_4.7.4-2014.06/bin/arm-eabi-
-make civz-p900-2.3_defconfig
+make civz-p900-2.5_defconfig
 make -j5
 rm -rf mod
 mkdir mod
@@ -12,7 +12,7 @@ cp `find ./ | grep .ko$` modules.order mod/
 
 export ARCH=arm
 export CROSS_COMPILE=~/KERNEL/TOOLCHAINS/google-4.7/bin/arm-linux-androideabi-
-make civz-p900-2.3_defconfig
+make civz-p900-2._defconfig
 make -j5
 rm -rf mod
 mkdir mod
