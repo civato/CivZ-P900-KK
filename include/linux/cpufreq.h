@@ -126,7 +126,7 @@ struct cpufreq_policy {
 #define CPUFREQ_RESUMECHANGE	(8)
 #define CPUFREQ_SUSPENDCHANGE	(9)
 #define FREQ_STEPS_GPU		9
-#define FREQ_STEPS_GPU_MAX	667
+#define FREQ_STEPS_GPU_MAX	677
 
 struct cpufreq_freqs {
 	unsigned int cpu;	/* cpu nr */
